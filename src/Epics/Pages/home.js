@@ -1,44 +1,89 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
+import axios from 'axios'
 import { simpleAction } from '../../actions/simpleAction'
-import Cards from '../Pages/Components/Cards/cards'
+import { Input } from 'antd'
 import { HomeConetent, BodyContent } from './style'
+import history from '../../history'
 
 class Home extends Component {
   state = {
-    page: 1,
-    limit: 3,
-    cardsArray: []
+    email: 'ashu+interview@enterprisebot.org',
+    password: 'Intervi3w'
   }
 
-  simpleAction = () => {
+  handleEmail = e => {
+    let val = e.target.value
+    this.setState({ email: val }, () => console.log(this.state.email))
+  }
+
+  handlePassword = e => {
+    let val = e.target.value
+    this.setState({ password: val }, () => console.log(this.state.password))
+  }
+
+  login = () => {
     const data = {
-      page: this.state.page + 1,
-      limit: this.state.limit
+      email: this.state.email,
+      password: this.state.password
     }
-    this.setState({ limit: this.state.limit, page: this.state.page + 1 }, () =>
-      this.props.simpleAction(data)
-    )
-  }
 
-  componentDidMount () {
-    const data = {
-      page: this.state.page,
-      limit: this.state.limit
+    const headers = {
+      'Content-Type': 'application/json'
     }
-    this.setState({ limit: this.state.limit, page: this.state.page }, () =>
-      this.props.simpleAction(data)
-    )
+
+    axios
+      .post(
+        `https://test-lbadmin-m.enterprisebot.co/api/v2/adminusers/login?include=user`,
+        data,
+        {
+          headers: headers
+        }
+      )
+      .then(res => {
+        console.log(res, 'response for having token')
+        console.log(res.data.id)
+        this.getSessions(res.data.id)
+      //  this.getMessage(res.data.id)
+      })
   }
 
-  componentWillReceiveProps (nextProps) {
-    this.addingCardData(nextProps)
+  getSessions = data => {
+    const headers = {
+      Authorization: data
+    }
+    axios
+      .get(
+        `https://test-lbadmin-m.enterprisebot.co/api/v2/botsessions?filter=%7B%22limit%22%3A20%2C%22skip%22%3A0%2C%22order%22%3A%22id%20DESC%22%2C%22where%22%3A%7B%22agentId%22%3A%225bcee5bafe751a289f6154cf%22%7D%7D`,
+        { headers: headers }
+      )
+      .then(res => {
+        // this.props.history.push({
+        //   pathname: '/chat',
+        //   state: { detail: res }
+        // })
+        localStorage.setItem('sessionObject', JSON.stringify(res.data));
+        this.props.history.push('/chat')
+
+      // const location = { pathname: '/chat', state: { detail: res } } 
+      // history.push(location)
+
+        console.log(res, 'response in get for session')
+      })
   }
 
-  addingCardData = data => {
-    data.getData.map(item => {
-      this.state.cardsArray.push(item)
-    }, console.log(this.state.cardsArray, 'this.state.cardsArray'))
+  getMessage = data => {
+    const headers = {
+      Authorization: data
+    }
+    axios
+      .get(
+        `https://test-lbadmin-m.enterprisebot.co/api/v2/botsessions/5dc2c58527247f050cd33d82/botmessage`,
+        { headers: headers }
+      )
+      .then(res => {
+        console.log(res, 'response in get for messege')
+      })
   }
 
   render () {
@@ -47,11 +92,14 @@ class Home extends Component {
     console.log(getData)
     return (
       <div>
-        <HomeConetent>Home Page</HomeConetent>
-        <BodyContent>
+        <HomeConetent>Login Page</HomeConetent>
+
+        <Input placeholder='Enter Email' onChange={this.handleEmail} />
+        <Input placeholder='Enter Password' onChange={this.handlePassword} />
+        {/* <BodyContent>
           {!isLoading ? <Cards cars={cardsArray} /> : null}
-        </BodyContent>
-        <button onClick={this.simpleAction}>Test redux action</button>
+        </BodyContent> */}
+        <button onClick={this.login}>Submit</button>
         {/* <pre>{JSON.stringify(this.props)}</pre> */}
       </div>
     )
